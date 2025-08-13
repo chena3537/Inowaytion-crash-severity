@@ -149,12 +149,15 @@ def hourly_pred(model, X_train, save_path="hourly_predictions"):
     for d in range(7):
         hourly_preds[d] = {}
         for h in range(0,23,2):
-            hourly_test['Day of week of crash'] = d
-            hourly_test['Two-hour interval start'] = h
-            hourly_test['Two-hour interval end'] = h+2
-            y_pred = model.predict(hourly_test)
-            hourly_preds[d][h] = y_pred
-    hourly_preds['coordinates'] = list(zip(X_train.Latitude, X_train.Longitude))
+            hourly_preds[d][h] = {}
+            hourly_data = X_train[(X_train['Day of week of crash'] == d) & (X_train['Two-hour interval start'] == h)]
+            if len(hourly_data) > 0:
+                y_pred = model.predict(hourly_data)
+                coords = list(zip(hourly_data.Latitude, hourly_data.Longitude))
+            else:
+                y_pred, coords = [],[]
+            hourly_preds[d][h]['coordinates'] = coords
+            hourly_preds[d][h]['severity'] = y_pred
     
     with open(f'{save_path}.pkl', 'wb') as f:
         pickle.dump(hourly_preds, f)
@@ -183,7 +186,7 @@ def main():
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
     model = train_model(X_train, y_train)
-    hourly_pred(model, X_train)
+    hourly_pred(model, X_train, "hourly_predictions_real")
     #evaluate_model(model, X_test, y_test, feature_names=feature_names, class_names=class_names, save=True)
     
     
