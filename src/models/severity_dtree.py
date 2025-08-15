@@ -6,7 +6,7 @@ import calendar
 import seaborn as sns
 import os
 import datetime
-import pickle
+import pickle 
 
 from sklearn.model_selection import train_test_split
 from sklearn import tree
@@ -16,7 +16,7 @@ from imblearn.over_sampling import SMOTE
 
 
 
-def load_data(filepath):
+def load_csv(filepath):
     return pd.read_csv(filepath)
 
 def str_to_dtype(df,col):
@@ -93,12 +93,12 @@ def train_model(X_train, y_train, smote=False, **kwargs):
     model = model.fit(X_train, y_train) 
     return model
 
-def evaluate_model(model, X_test, y_test, feature_names, class_names, n_feature_importances = 10, save = False, output_dir='Model Evaluations', model_dir=None):
+def evaluate_model(model, X_test, y_test, feature_names, class_names, n_feature_importances = 10, save = False, output_dir='Model Reports', model_dir=None):
     y_pred = model.predict(X_test)
 
     if model_dir == None:
         model_id = datetime.datetime.now().strftime('%y%m%d_%H%M%S')
-        model_dir = f'dtree_eval_{model_id}'
+        model_dir = f'model_report_{model_id}'
     model_dir_path = f'{output_dir}/{model_dir}'
     os.makedirs(model_dir_path, exist_ok=True)
 
@@ -126,17 +126,19 @@ def evaluate_model(model, X_test, y_test, feature_names, class_names, n_feature_
     if save:
         plt.savefig(f'{model_dir_path}/confusion_matrix.png')
 
-    plt.figure(2)
-    tree.plot_tree(model, filled=True, feature_names=feature_names, class_names=class_names)
+    plt.figure(2,figsize=(50,25))
+    tree.plot_tree(model, filled=True, feature_names=feature_names, class_names=class_names, fontsize=10)
     plt.title('Decision Tree Structure')
+    plt.tight_layout()
 
     if save:
-        plt.savefig(f'{model_dir_path}/decision_tree.png')
+        plt.savefig(f'{model_dir_path}/decision_tree.png', dpi=300)
     
     plt.figure(3)
     feature_importance = pd.Series(model.feature_importances_, index=feature_names)
     feature_importance.sort_values(ascending=False)[:n_feature_importances].plot(kind="bar")
     plt.title('Feature Importance')
+    plt.tight_layout()
     
     if save:
         plt.savefig(f'{model_dir_path}/feature_importance.png')
@@ -149,45 +151,15 @@ def hourly_pred(model, X_train, save_path="hourly_predictions"):
     for d in range(7):
         hourly_preds[d] = {}
         for h in range(0,23,2):
-            hourly_test['Day of week of crash'] = d
-            hourly_test['Two-hour interval start'] = h
-            hourly_test['Two-hour interval end'] = h+2
-            y_pred = model.predict(hourly_test)
-            hourly_preds[d][h] = y_pred
-    hourly_preds['coordinates'] = list(zip(X_train.Latitude, X_train.Longitude))
+            hourly_preds[d][h] = {}
+            hourly_data = X_train[(X_train['Day of week of crash'] == d) & (X_train['Two-hour interval start'] == h)]
+            if len(hourly_data) > 0:
+                y_pred = model.predict(hourly_data)
+                coords = list(zip(hourly_data.Latitude, hourly_data.Longitude))
+            else:
+                y_pred, coords = [],[]
+            hourly_preds[d][h]['coordinates'] = coords
+            hourly_preds[d][h]['severity'] = y_pred
     
     with open(f'{save_path}.pkl', 'wb') as f:
         pickle.dump(hourly_preds, f)
-
-
-    
-
-def main():
-    crash_data_filepath = "Datasets/nsw_road_crash_data_2019-2023_crash.csv"
-    landuse_data_filepath = "Datasets/syd_landuse_test.csv"
-    lgas = ['Sydney']
-
-
-    y_col = 'Degree of crash'
-    df = pd.read_csv(crash_data_filepath)
-    landuse_df = (pd.read_csv(landuse_data_filepath))
-    str_to_dtype(landuse_df, "landuse")
-
-    landuse_data = landuse_preprocess(landuse_df)
-    crash_data = nsw_preprocess(lga(df, lgas))
-    data = pd.merge(crash_data, landuse_data, 'left', on='Crash ID')
-
-    X,y = data.drop([y_col,'Crash ID'], axis=1), data[y_col]
-    feature_names = X.columns
-    class_names = sorted(y.unique())
-    
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
-    model = train_model(X_train, y_train)
-    hourly_pred(model, X_train)
-    #evaluate_model(model, X_test, y_test, feature_names=feature_names, class_names=class_names, save=True)
-    
-    
-    
-
-if __name__ == "__main__":
-    main()
