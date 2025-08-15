@@ -1,3 +1,4 @@
 cache/
+__pycache__/
 maps/
-*.ipynb
+notebooks/

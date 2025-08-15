@@ -1,7 +1,5 @@
 import folium
 import osmnx as ox
-import geopandas as gpd
-import matplotlib.pyplot as plt
 import pickle
 import calendar
 
@@ -48,21 +46,3 @@ def create_hourly_map(place_name, center_point, hourly_preds, colors=['red', 'or
     
     folium.LayerControl(collapsed=False).add_to(m)
     m.save(f"{save_as}.html")
-    
-
-
-
-
-    
-
-def main():
-    place_name = "Sydney, NSW, Australia"
-    center_point = ox.geocode("Town Hall, Sydney, Australia")
-    
-    hourly_preds = load_hourly('hourly_predictions_real.pkl')
-    print(hourly_preds)
-    
-    create_hourly_map(place_name, center_point, hourly_preds, save_as= "syd_hourly_predictions_real",load_graph="sydney_road_graph.pkl")
-
-if __name__ == "__main__":
-    main()
