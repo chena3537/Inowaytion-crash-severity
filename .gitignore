@@ -2,3 +2,6 @@ cache/
 __pycache__/
 maps/
 notebooks/
+*.csv
+*.pkl
+*.pickle

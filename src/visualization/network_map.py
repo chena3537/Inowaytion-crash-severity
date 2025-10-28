@@ -14,6 +14,11 @@ def load_hourly(file_path):
 def road_network_from_place(place):
     return ox.graph_from_place(place, network_type='drive')
 
+def load_graph(file_path):
+    with open(file_path, "rb") as f:
+        G = pickle.load(f)
+    return G
+
 def map_color(pred, colors=['red', 'orange', 'yellow'], class_names=['Fatal','Injury','Non-casualty (towaway)']):
     mapping = dict(zip(class_names, colors))
     print(mapping)
